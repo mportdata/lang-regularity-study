@@ -85,5 +85,24 @@ def eval_command(
     run_eval(config_path=config, force=force)
 
 
+@app.command("experiment")
+def experiment_command(
+    config: Path = typer.Option(
+        Path("configs/latin_tight.yaml"),
+        "--config",
+        "-c",
+        help="Path to experiment YAML config",
+    ),
+    force: bool = typer.Option(
+        False, "--force", "-f", help="Force rebuild/retrain for all pipeline stages"
+    ),
+) -> None:
+    fetch(config_path=config, force=force)
+    run_bpe(config_path=config, force=force)
+    run_tokenize(config_path=config, force=force)
+    run_train(config_path=config, force=force)
+    run_eval(config_path=config, force=force)
+
+
 def main() -> None:
     app()

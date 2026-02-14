@@ -94,6 +94,16 @@ make pipeline FORCE=1
 python -m lang_regularity pipeline --config configs/latin_tight.yaml --force
 ```
 
+### Run full experiment pipeline
+
+```bash
+make experiment
+# force all stages
+make experiment FORCE=1
+# or
+python -m lang_regularity experiment --config configs/latin_tight.yaml --force
+```
+
 ## Output
 
 - **Raw data**: `data/raw/<lang>/wiki.txt` - Extracted text corpus

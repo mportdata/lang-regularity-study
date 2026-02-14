@@ -1,4 +1,4 @@
-.PHONY: fetch fetch-all bpe tokenize train eval pipeline install
+.PHONY: fetch fetch-all bpe tokenize train eval experiment pipeline install
 
 fetch:
 	uv run python -m lang_regularity fetch --config configs/latin_tight.yaml
@@ -17,6 +17,9 @@ train:
 
 eval:
 	uv run python -m lang_regularity eval --config configs/latin_tight.yaml
+
+experiment:
+	uv run python -m lang_regularity experiment --config configs/latin_tight.yaml $(if $(FORCE),--force,)
 
 pipeline:
 	uv run python -m lang_regularity pipeline --config configs/latin_tight.yaml $(if $(FORCE),--force,)
