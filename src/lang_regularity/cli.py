@@ -50,5 +50,22 @@ def tokenize_command(
     run_tokenize(config_path=config, force=force)
 
 
+@app.command("pipeline")
+def pipeline_command(
+    config: Path = typer.Option(
+        Path("configs/latin_tight.yaml"),
+        "--config",
+        "-c",
+        help="Path to experiment YAML config",
+    ),
+    force: bool = typer.Option(
+        False, "--force", "-f", help="Force rebuild for all pipeline stages"
+    ),
+) -> None:
+    fetch(config_path=config, force=force)
+    run_bpe(config_path=config, force=force)
+    run_tokenize(config_path=config, force=force)
+
+
 def main() -> None:
     app()

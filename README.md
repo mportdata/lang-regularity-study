@@ -52,6 +52,10 @@ python -m lang_regularity bpe --config configs/latin_tight.yaml
 
 ```bash
 make pipeline
+# force all stages
+make pipeline FORCE=1
+# or
+python -m lang_regularity pipeline --config configs/latin_tight.yaml --force
 ```
 
 ### Tokenize corpora for model training
