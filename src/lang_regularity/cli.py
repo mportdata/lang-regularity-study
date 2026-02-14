@@ -2,9 +2,10 @@ from pathlib import Path
 
 import typer
 
-from .data.bpe import run_bpe
 from .data.fetch import fetch
-from .data.tokenize import run_tokenize
+from .models.trainer import run_train
+from .tokenization.encode import run_tokenize
+from .tokenization.train_bpe import run_bpe
 
 app = typer.Typer(help="Language regularity study CLI")
 
@@ -65,6 +66,14 @@ def pipeline_command(
     fetch(config_path=config, force=force)
     run_bpe(config_path=config, force=force)
     run_tokenize(config_path=config, force=force)
+
+
+@app.command("train")
+def train_command(
+    config: Path = typer.Option(..., "--config", "-c", help="Path to experiment YAML config"),
+    force: bool = typer.Option(False, "--force", "-f", help="Force retrain if outputs exist"),
+) -> None:
+    run_train(config_path=config, force=force)
 
 
 def main() -> None:

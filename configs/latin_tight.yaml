@@ -36,3 +36,21 @@ tokenize:
   add_bos: true
   add_eos: true
   dtype: "auto"
+
+train:
+  experiment_name: "latin_tight_gpt_small_v1"
+  output_root: "runs"
+  device: "auto"
+  block_size: 128
+  batch_size: 8
+  max_steps: 300
+  eval_interval: 50
+  eval_batches: 10
+  learning_rate: 0.0003
+  weight_decay: 0.1
+  grad_clip: 1.0
+  n_embd: 192
+  n_head: 6
+  n_layer: 6
+  dropout: 0.1
+  seed: 42

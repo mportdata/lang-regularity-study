@@ -10,6 +10,11 @@ dependencies = [
     "tokenizers>=0.20.0",
 ]
 
+[project.optional-dependencies]
+train = [
+    "torch>=2.2.0",
+]
+
 [project.scripts]
 lang-regularity = "lang_regularity.cli:main"
 
