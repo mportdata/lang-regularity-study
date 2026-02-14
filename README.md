@@ -8,7 +8,7 @@ This project streams Wikipedia text from Hugging Face datasets, normalizes white
 
 The project follows a hybrid artifact layout:
 - Canonical reusable artifacts live in `data/`.
-- Experiment-specific model outputs live in `runs/`.
+- Experiment-specific model/eval outputs live in `runs/`.
 
 ## Installation
 
@@ -76,6 +76,14 @@ make train
 python -m lang_regularity train --config configs/latin_tight.yaml
 ```
 
+### Evaluate and compare languages
+
+```bash
+make eval
+# or
+python -m lang_regularity eval --config configs/latin_tight.yaml
+```
+
 ### Run full data pipeline (through tokenize)
 
 ```bash
@@ -94,6 +102,7 @@ python -m lang_regularity pipeline --config configs/latin_tight.yaml --force
 - **BPE artifacts**: `data/tokenizers/<experiment>/<lang>/` - `tokenizer.json`, vocab/merges, metadata
 - **Encoded tokens**: `data/encoded/<experiment>/<lang>/` - `train.bin`, `val.bin`, tokenization metadata
 - **Training outputs**: `runs/<experiment>/<lang>/` - `model.pt`, `train.log`, `metrics.json`, config snapshot
+- **Eval summary**: `runs/<experiment>/eval/summary.json` - cross-language ranking and aggregate stats
 
 ## Configuration
 
@@ -110,6 +119,7 @@ Edit the experiment config file in `configs/` to customize:
 - `bpe`: Tokenizer training settings
 - `tokenize`: Text-to-token-id encoding settings
 - `train`: Small GPT-style training settings
+- `eval`: Evaluation summary output settings
 
 `bpe` settings:
 - `experiment_name`: Namespace for tokenizer outputs
@@ -147,12 +157,16 @@ Edit the experiment config file in `configs/` to customize:
 - `n_embd`, `n_head`, `n_layer`, `dropout`: Transformer shape
 - `seed`: Random seed for reproducibility
 
+`eval` settings:
+- `output_subdir`: Subdirectory under `runs/<train_experiment>/`
+
 Skip/overwrite behavior:
 - `fetch` skips languages with existing `wiki.txt` + `.meta.json` unless `--force` or `force: true`
 - `bpe` skips languages when tokenizer artifacts exist and both corpus checksum and BPE config hash match
 - `bpe --force` always retrains and overwrites tokenizer artifacts
 - `tokenize` skips languages with existing `train.bin`, `val.bin`, and metadata unless `--force`
 - `train` skips languages with existing `model.pt` + `metrics.json` unless `--force`
+- `eval` skips existing summary output unless `--force`
 
 ## Planned PR Sequence
 

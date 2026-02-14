@@ -54,3 +54,6 @@ train:
   n_layer: 6
   dropout: 0.1
   seed: 42
+
+eval:
+  output_subdir: "eval"

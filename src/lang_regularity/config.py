@@ -50,6 +50,11 @@ class TrainConfig:
 
 
 @dataclass(frozen=True)
+class EvalConfig:
+    output_subdir: str
+
+
+@dataclass(frozen=True)
 class ExperimentConfig:
     languages: list[str]
     hf_dataset: str
@@ -63,6 +68,7 @@ class ExperimentConfig:
     bpe: BPEConfig | None = None
     tokenize: TokenizeConfig | None = None
     train: TrainConfig | None = None
+    eval: EvalConfig | None = None
 
 
 def _require_mapping(data: object, config_path: Path) -> dict:
@@ -283,6 +289,16 @@ def _load_train_config(data: dict, config_path: Path) -> TrainConfig | None:
     )
 
 
+def _load_eval_config(data: dict, config_path: Path) -> EvalConfig | None:
+    eval_raw = data.get("eval")
+    if eval_raw is None:
+        return None
+    if not isinstance(eval_raw, dict):
+        raise ValueError(f"Config key 'eval' in '{config_path}' must be a mapping.")
+    output_subdir = _require_str(eval_raw, "output_subdir", config_path)
+    return EvalConfig(output_subdir=output_subdir)
+
+
 def load_config(config_path: Path) -> ExperimentConfig:
     if not config_path.exists():
         raise FileNotFoundError(f"Config file not found: {config_path}")
@@ -314,6 +330,7 @@ def load_config(config_path: Path) -> ExperimentConfig:
     bpe = _load_bpe_config(data, config_path)
     tokenize = _load_tokenize_config(data, config_path)
     train = _load_train_config(data, config_path)
+    eval_cfg = _load_eval_config(data, config_path)
 
     return ExperimentConfig(
         languages=languages,
@@ -328,4 +345,5 @@ def load_config(config_path: Path) -> ExperimentConfig:
         bpe=bpe,
         tokenize=tokenize,
         train=train,
+        eval=eval_cfg,
     )

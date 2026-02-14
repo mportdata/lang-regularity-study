@@ -3,6 +3,7 @@ from pathlib import Path
 import typer
 
 from .data.fetch import fetch
+from .eval.compare import run_eval
 from .models.trainer import run_train
 from .tokenization.encode import run_tokenize
 from .tokenization.train_bpe import run_bpe
@@ -74,6 +75,14 @@ def train_command(
     force: bool = typer.Option(False, "--force", "-f", help="Force retrain if outputs exist"),
 ) -> None:
     run_train(config_path=config, force=force)
+
+
+@app.command("eval")
+def eval_command(
+    config: Path = typer.Option(..., "--config", "-c", help="Path to experiment YAML config"),
+    force: bool = typer.Option(False, "--force", "-f", help="Force recompute eval outputs"),
+) -> None:
+    run_eval(config_path=config, force=force)
 
 
 def main() -> None:
