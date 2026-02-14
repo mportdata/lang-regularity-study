@@ -6,15 +6,27 @@ Study of language regularity using Wikipedia text corpora for controlled cross-l
 
 This project streams Wikipedia text from Hugging Face datasets, normalizes whitespace, and builds fixed-size corpora per language for BPE and small-model comparison experiments.
 
+The project follows a hybrid artifact layout:
+- Canonical reusable artifacts live in `data/`.
+- Experiment-specific model outputs live in `runs/`.
+
 ## Installation
 
 ```bash
-# Using uv (recommended)
+# Base pipeline (fetch/bpe/tokenize)
 uv pip install -e .
 
-# Or using pip
-pip install -e .
+# Include training dependency
+uv pip install -e ".[train]"
 ```
+
+## Cross-Architecture Runtime (M1 + GTX 3050)
+
+Training device is controlled by `train.device` in config:
+- `auto`: prefer `cuda`, then `mps`, else `cpu`
+- `cuda`, `mps`, `cpu`: explicit target with safe fallback to `cpu` if unavailable
+
+This allows one config to run on both Apple Silicon and NVIDIA machines.
 
 ## Usage
 
@@ -48,7 +60,23 @@ make bpe
 python -m lang_regularity bpe --config configs/latin_tight.yaml
 ```
 
-### Run full data + BPE pipeline
+### Tokenize corpora for model training
+
+```bash
+make tokenize
+# or
+python -m lang_regularity tokenize --config configs/latin_tight.yaml
+```
+
+### Train small language models
+
+```bash
+make train
+# or
+python -m lang_regularity train --config configs/latin_tight.yaml
+```
+
+### Run full data pipeline (through tokenize)
 
 ```bash
 make pipeline
@@ -58,14 +86,6 @@ make pipeline FORCE=1
 python -m lang_regularity pipeline --config configs/latin_tight.yaml --force
 ```
 
-### Tokenize corpora for model training
-
-```bash
-make tokenize
-# or
-python -m lang_regularity tokenize --config configs/latin_tight.yaml
-```
-
 ## Output
 
 - **Raw data**: `data/raw/<lang>/wiki.txt` - Extracted text corpus
@@ -73,6 +93,7 @@ python -m lang_regularity tokenize --config configs/latin_tight.yaml
 - **Work directory**: `data/.work/<lang>/` - Reserved for run artifacts
 - **BPE artifacts**: `data/tokenizers/<experiment>/<lang>/` - `tokenizer.json`, vocab/merges, metadata
 - **Encoded tokens**: `data/encoded/<experiment>/<lang>/` - `train.bin`, `val.bin`, tokenization metadata
+- **Training outputs**: `runs/<experiment>/<lang>/` - `model.pt`, `train.log`, `metrics.json`, config snapshot
 
 ## Configuration
 
@@ -88,6 +109,7 @@ Edit the experiment config file in `configs/` to customize:
 - `force`: Whether to rebuild even if output already exists
 - `bpe`: Tokenizer training settings
 - `tokenize`: Text-to-token-id encoding settings
+- `train`: Small GPT-style training settings
 
 `bpe` settings:
 - `experiment_name`: Namespace for tokenizer outputs
@@ -110,8 +132,33 @@ Edit the experiment config file in `configs/` to customize:
 - `dtype`: Output id dtype (`auto`, `uint16`, `uint32`)
 - `max_tokens`: Optional cap on total written tokens per language
 
+`train` settings:
+- `experiment_name`: Namespace under `runs/`
+- `output_root`: Root directory for training outputs
+- `device`: `auto|cuda|mps|cpu`
+- `block_size`: Context length in tokens
+- `batch_size`: Batch size per step
+- `max_steps`: Total optimization steps
+- `eval_interval`: Steps between validation checks
+- `eval_batches`: Batches used per evaluation pass
+- `learning_rate`: AdamW learning rate
+- `weight_decay`: AdamW weight decay
+- `grad_clip`: Gradient clipping max norm
+- `n_embd`, `n_head`, `n_layer`, `dropout`: Transformer shape
+- `seed`: Random seed for reproducibility
+
 Skip/overwrite behavior:
 - `fetch` skips languages with existing `wiki.txt` + `.meta.json` unless `--force` or `force: true`
 - `bpe` skips languages when tokenizer artifacts exist and both corpus checksum and BPE config hash match
 - `bpe --force` always retrains and overwrites tokenizer artifacts
 - `tokenize` skips languages with existing `train.bin`, `val.bin`, and metadata unless `--force`
+- `train` skips languages with existing `model.pt` + `metrics.json` unless `--force`
+
+## Planned PR Sequence
+
+- `PR2` complete: tokenize stage (`data/encoded/...`)
+- `PR3`: train stage with cross-architecture device fallback (`cuda`/`mps`/`cpu`)
+- `PR4`: evaluation summary/comparison stage (`runs/<exp>/eval/summary.json`)
+- `PR5`: full experiment command (`fetch -> bpe -> tokenize -> train -> eval`)
+
+Detailed plan: `docs/pr_plan.md`.

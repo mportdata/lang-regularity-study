@@ -91,8 +91,6 @@ def _fetch_language(cfg, lang: str, force: bool) -> None:
 
     raw_lang_dir.mkdir(parents=True, exist_ok=True)
     work_lang_dir.mkdir(parents=True, exist_ok=True)
-    Path("runs").mkdir(exist_ok=True)
-
     if output_text_path.exists() and metadata_path.exists() and not effective_force:
         typer.echo(
             f"Output already exists at '{output_text_path}'. Skipping (use --force to rebuild)."

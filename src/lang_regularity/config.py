@@ -30,6 +30,26 @@ class TokenizeConfig:
 
 
 @dataclass(frozen=True)
+class TrainConfig:
+    experiment_name: str
+    output_root: Path
+    device: str
+    block_size: int
+    batch_size: int
+    max_steps: int
+    eval_interval: int
+    eval_batches: int
+    learning_rate: float
+    weight_decay: float
+    grad_clip: float
+    n_embd: int
+    n_head: int
+    n_layer: int
+    dropout: float
+    seed: int
+
+
+@dataclass(frozen=True)
 class ExperimentConfig:
     languages: list[str]
     hf_dataset: str
@@ -42,6 +62,7 @@ class ExperimentConfig:
     force: bool = False
     bpe: BPEConfig | None = None
     tokenize: TokenizeConfig | None = None
+    train: TrainConfig | None = None
 
 
 def _require_mapping(data: object, config_path: Path) -> dict:
@@ -181,6 +202,87 @@ def _load_tokenize_config(data: dict, config_path: Path) -> TokenizeConfig | Non
     )
 
 
+def _load_train_config(data: dict, config_path: Path) -> TrainConfig | None:
+    train_raw = data.get("train")
+    if train_raw is None:
+        return None
+    if not isinstance(train_raw, dict):
+        raise ValueError(f"Config key 'train' in '{config_path}' must be a mapping.")
+
+    experiment_name = _require_str(train_raw, "experiment_name", config_path)
+    output_root = Path(_require_str(train_raw, "output_root", config_path))
+    device = _require_str(train_raw, "device", config_path).lower()
+    if device not in {"auto", "cpu", "cuda", "mps"}:
+        raise ValueError(
+            f"Config key 'train.device' in '{config_path}' must be one of auto|cpu|cuda|mps."
+        )
+
+    block_size = _require_int(train_raw, "block_size", config_path)
+    batch_size = _require_int(train_raw, "batch_size", config_path)
+    max_steps = _require_int(train_raw, "max_steps", config_path)
+    eval_interval = _require_int(train_raw, "eval_interval", config_path)
+    eval_batches = _require_int(train_raw, "eval_batches", config_path)
+    n_embd = _require_int(train_raw, "n_embd", config_path)
+    n_head = _require_int(train_raw, "n_head", config_path)
+    n_layer = _require_int(train_raw, "n_layer", config_path)
+    seed = _require_int(train_raw, "seed", config_path)
+
+    if block_size <= 1:
+        raise ValueError(f"Config key 'train.block_size' in '{config_path}' must be > 1.")
+    if batch_size <= 0:
+        raise ValueError(f"Config key 'train.batch_size' in '{config_path}' must be > 0.")
+    if max_steps <= 0:
+        raise ValueError(f"Config key 'train.max_steps' in '{config_path}' must be > 0.")
+    if eval_interval <= 0:
+        raise ValueError(f"Config key 'train.eval_interval' in '{config_path}' must be > 0.")
+    if eval_batches <= 0:
+        raise ValueError(f"Config key 'train.eval_batches' in '{config_path}' must be > 0.")
+    if n_embd <= 0 or n_head <= 0 or n_layer <= 0:
+        raise ValueError(
+            f"Config keys 'train.n_embd|n_head|n_layer' in '{config_path}' must be > 0."
+        )
+    if n_embd % n_head != 0:
+        raise ValueError(
+            f"Config key 'train.n_embd' in '{config_path}' must be divisible by train.n_head."
+        )
+
+    learning_rate_raw = train_raw.get("learning_rate")
+    weight_decay_raw = train_raw.get("weight_decay")
+    grad_clip_raw = train_raw.get("grad_clip")
+    dropout_raw = train_raw.get("dropout")
+    if not isinstance(learning_rate_raw, (int, float)) or learning_rate_raw <= 0:
+        raise ValueError(
+            f"Config key 'train.learning_rate' in '{config_path}' must be a positive number."
+        )
+    if not isinstance(weight_decay_raw, (int, float)) or weight_decay_raw < 0:
+        raise ValueError(
+            f"Config key 'train.weight_decay' in '{config_path}' must be >= 0."
+        )
+    if not isinstance(grad_clip_raw, (int, float)) or grad_clip_raw <= 0:
+        raise ValueError(f"Config key 'train.grad_clip' in '{config_path}' must be > 0.")
+    if not isinstance(dropout_raw, (int, float)) or not (0 <= float(dropout_raw) < 1):
+        raise ValueError(f"Config key 'train.dropout' in '{config_path}' must be in [0, 1).")
+
+    return TrainConfig(
+        experiment_name=experiment_name,
+        output_root=output_root,
+        device=device,
+        block_size=block_size,
+        batch_size=batch_size,
+        max_steps=max_steps,
+        eval_interval=eval_interval,
+        eval_batches=eval_batches,
+        learning_rate=float(learning_rate_raw),
+        weight_decay=float(weight_decay_raw),
+        grad_clip=float(grad_clip_raw),
+        n_embd=n_embd,
+        n_head=n_head,
+        n_layer=n_layer,
+        dropout=float(dropout_raw),
+        seed=seed,
+    )
+
+
 def load_config(config_path: Path) -> ExperimentConfig:
     if not config_path.exists():
         raise FileNotFoundError(f"Config file not found: {config_path}")
@@ -211,6 +313,7 @@ def load_config(config_path: Path) -> ExperimentConfig:
 
     bpe = _load_bpe_config(data, config_path)
     tokenize = _load_tokenize_config(data, config_path)
+    train = _load_train_config(data, config_path)
 
     return ExperimentConfig(
         languages=languages,
@@ -224,4 +327,5 @@ def load_config(config_path: Path) -> ExperimentConfig:
         force=force,
         bpe=bpe,
         tokenize=tokenize,
+        train=train,
     )
