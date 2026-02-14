@@ -59,7 +59,7 @@ make pipeline
 - **Raw data**: `data/raw/<lang>/wiki.txt` - Extracted text corpus
 - **Metadata**: `data/raw/<lang>/wiki.txt.meta.json` - Source info, checksums, sizes, timestamps
 - **Work directory**: `data/.work/<lang>/` - Reserved for run artifacts
-- **BPE artifacts**: `data/processed/bpe/<experiment>/<lang>/` - `tokenizer.json`, vocab/merges, metadata
+- **BPE artifacts**: `data/tokenizers/<experiment>/<lang>/` - `tokenizer.json`, vocab/merges, metadata
 
 ## Configuration
 

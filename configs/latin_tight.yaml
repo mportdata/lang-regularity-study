@@ -15,7 +15,7 @@ force: false
 
 bpe:
   experiment_name: "latin_tight_bpe_v1"
-  output_root: "data/processed/bpe"
+  output_root: "data/tokenizers"
   vocab_size: 16000
   min_frequency: 2
   limit_alphabet: 1000
