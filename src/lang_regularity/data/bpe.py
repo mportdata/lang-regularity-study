@@ -12,6 +12,8 @@ from tokenizers import Tokenizer, models, pre_tokenizers, trainers
 
 from ..config import BPEConfig, load_config
 
+LEGACY_BPE_OUTPUT_ROOT = Path("data/processed/bpe")
+
 
 def _sha256_for_file(path: Path) -> str:
     digest = hashlib.sha256()
@@ -25,7 +27,6 @@ def _stable_config_hash(language: str, bpe_cfg: BPEConfig) -> str:
     payload = {
         "language": language,
         "experiment_name": bpe_cfg.experiment_name,
-        "output_root": str(bpe_cfg.output_root),
         "vocab_size": bpe_cfg.vocab_size,
         "min_frequency": bpe_cfg.min_frequency,
         "limit_alphabet": bpe_cfg.limit_alphabet,
@@ -35,6 +36,19 @@ def _stable_config_hash(language: str, bpe_cfg: BPEConfig) -> str:
         "unk_token": bpe_cfg.unk_token,
     }
     return hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
+
+
+def _bpe_config_snapshot(bpe_cfg: BPEConfig) -> dict[str, object]:
+    return {
+        "experiment_name": bpe_cfg.experiment_name,
+        "vocab_size": bpe_cfg.vocab_size,
+        "min_frequency": bpe_cfg.min_frequency,
+        "limit_alphabet": bpe_cfg.limit_alphabet,
+        "train_sample_mb": bpe_cfg.train_sample_mb,
+        "shuffle_seed": bpe_cfg.shuffle_seed,
+        "special_tokens": bpe_cfg.special_tokens,
+        "unk_token": bpe_cfg.unk_token,
+    }
 
 
 def _collect_training_texts(corpus_path: Path, sample_mb: float, seed: int) -> list[str]:
@@ -94,6 +108,7 @@ def _should_skip(
     metadata_path: Path,
     tokenizer_json_path: Path,
     expected_config_hash: str,
+    expected_bpe_config: dict[str, object],
     input_sha256: str,
     force: bool,
 ) -> bool:
@@ -107,10 +122,19 @@ def _should_skip(
     except json.JSONDecodeError:
         return False
 
-    return (
-        metadata.get("config_hash") == expected_config_hash
-        and metadata.get("input_text_sha256") == input_sha256
-    )
+    if metadata.get("input_text_sha256") != input_sha256:
+        return False
+    if metadata.get("config_hash") == expected_config_hash:
+        return True
+    return metadata.get("bpe_config") == expected_bpe_config
+
+
+def _legacy_artifact_paths(output_dir: Path, experiment_name: str, language: str) -> tuple[Path, Path]:
+    current_root = output_dir.parents[1]
+    if current_root == LEGACY_BPE_OUTPUT_ROOT:
+        return output_dir / "tokenizer.json", output_dir / "bpe.meta.json"
+    legacy_output_dir = LEGACY_BPE_OUTPUT_ROOT / experiment_name / language
+    return legacy_output_dir / "tokenizer.json", legacy_output_dir / "bpe.meta.json"
 
 
 def _train_for_language(
@@ -130,15 +154,36 @@ def _train_for_language(
 
     input_sha256 = _sha256_for_file(input_corpus_path)
     config_hash = _stable_config_hash(language=language, bpe_cfg=bpe_cfg)
+    bpe_config_snapshot = _bpe_config_snapshot(bpe_cfg=bpe_cfg)
 
     if _should_skip(
         metadata_path=metadata_path,
         tokenizer_json_path=tokenizer_json_path,
         expected_config_hash=config_hash,
+        expected_bpe_config=bpe_config_snapshot,
         input_sha256=input_sha256,
         force=force,
     ):
         typer.echo(f"BPE already up to date for '{language}'. Skipping (use --force to retrain).")
+        return
+
+    legacy_tokenizer_path, legacy_metadata_path = _legacy_artifact_paths(
+        output_dir=output_dir,
+        experiment_name=bpe_cfg.experiment_name,
+        language=language,
+    )
+    if _should_skip(
+        metadata_path=legacy_metadata_path,
+        tokenizer_json_path=legacy_tokenizer_path,
+        expected_config_hash=config_hash,
+        expected_bpe_config=bpe_config_snapshot,
+        input_sha256=input_sha256,
+        force=force,
+    ):
+        typer.echo(
+            "BPE already up to date in legacy path for "
+            f"'{language}' ({legacy_tokenizer_path}). Skipping."
+        )
         return
 
     typer.echo(f"Training BPE for language '{language}'...")
@@ -162,16 +207,7 @@ def _train_for_language(
         "tokenizer_json_path": str(tokenizer_json_path),
         "model_files": [str(output_dir / p) for p in saved_files],
         "config_hash": config_hash,
-        "bpe_config": {
-            "experiment_name": bpe_cfg.experiment_name,
-            "vocab_size": bpe_cfg.vocab_size,
-            "min_frequency": bpe_cfg.min_frequency,
-            "limit_alphabet": bpe_cfg.limit_alphabet,
-            "train_sample_mb": bpe_cfg.train_sample_mb,
-            "shuffle_seed": bpe_cfg.shuffle_seed,
-            "special_tokens": bpe_cfg.special_tokens,
-            "unk_token": bpe_cfg.unk_token,
-        },
+        "bpe_config": bpe_config_snapshot,
         "created_at_utc": now,
         "updated_at_utc": now,
     }

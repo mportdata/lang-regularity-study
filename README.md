@@ -59,7 +59,7 @@ make pipeline
 - **Raw data**: `data/raw/<lang>/wiki.txt` - Extracted text corpus
 - **Metadata**: `data/raw/<lang>/wiki.txt.meta.json` - Source info, checksums, sizes, timestamps
 - **Work directory**: `data/.work/<lang>/` - Reserved for run artifacts
-- **BPE artifacts**: `data/processed/bpe/<experiment>/<lang>/` - `tokenizer.json`, vocab/merges, metadata
+- **BPE artifacts**: `data/tokenizers/<experiment>/<lang>/` - `tokenizer.json`, vocab/merges, metadata
 
 ## Configuration
 
@@ -90,3 +90,4 @@ Skip/overwrite behavior:
 - `fetch` skips languages with existing `wiki.txt` + `.meta.json` unless `--force` or `force: true`
 - `bpe` skips languages when tokenizer artifacts exist and both corpus checksum and BPE config hash match
 - `bpe --force` always retrains and overwrites tokenizer artifacts
+- Legacy compatibility: existing artifacts under `data/processed/bpe/...` are detected and reused
