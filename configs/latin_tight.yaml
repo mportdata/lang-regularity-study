@@ -1,0 +1,14 @@
+languages:
+  - en
+  - eo
+  - fi
+  - fr
+  - tr
+hf_dataset: "wikimedia/wikipedia"
+hf_date: "20231101"
+hf_split: "train"
+hf_text_field: "text"
+output_dir: "data/raw"
+work_dir: "data/.work"
+max_size_mb: 50
+force: false
