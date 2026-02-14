@@ -27,3 +27,12 @@ bpe:
     - "<bos>"
     - "<eos>"
   unk_token: "<unk>"
+
+tokenize:
+  experiment_name: "latin_tight_enc_v1"
+  output_root: "data/encoded"
+  val_ratio: 0.05
+  seed: 42
+  add_bos: true
+  add_eos: true
+  dtype: "auto"

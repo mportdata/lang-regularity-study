@@ -54,12 +54,21 @@ python -m lang_regularity bpe --config configs/latin_tight.yaml
 make pipeline
 ```
 
+### Tokenize corpora for model training
+
+```bash
+make tokenize
+# or
+python -m lang_regularity tokenize --config configs/latin_tight.yaml
+```
+
 ## Output
 
 - **Raw data**: `data/raw/<lang>/wiki.txt` - Extracted text corpus
 - **Metadata**: `data/raw/<lang>/wiki.txt.meta.json` - Source info, checksums, sizes, timestamps
 - **Work directory**: `data/.work/<lang>/` - Reserved for run artifacts
 - **BPE artifacts**: `data/tokenizers/<experiment>/<lang>/` - `tokenizer.json`, vocab/merges, metadata
+- **Encoded tokens**: `data/encoded/<experiment>/<lang>/` - `train.bin`, `val.bin`, tokenization metadata
 
 ## Configuration
 
@@ -74,6 +83,7 @@ Edit the experiment config file in `configs/` to customize:
 - `max_size_mb`: Shared maximum output text size in MB per language
 - `force`: Whether to rebuild even if output already exists
 - `bpe`: Tokenizer training settings
+- `tokenize`: Text-to-token-id encoding settings
 
 `bpe` settings:
 - `experiment_name`: Namespace for tokenizer outputs
@@ -86,7 +96,18 @@ Edit the experiment config file in `configs/` to customize:
 - `special_tokens`: Reserved tokens included in vocab
 - `unk_token`: Unknown-token symbol (must be in `special_tokens`)
 
+`tokenize` settings:
+- `experiment_name`: Namespace for encoded outputs
+- `output_root`: Root directory for encoded data artifacts
+- `val_ratio`: Fraction of documents routed to validation split
+- `seed`: Deterministic split seed
+- `add_bos`: Whether to prepend `<bos>` token id per document
+- `add_eos`: Whether to append `<eos>` token id per document
+- `dtype`: Output id dtype (`auto`, `uint16`, `uint32`)
+- `max_tokens`: Optional cap on total written tokens per language
+
 Skip/overwrite behavior:
 - `fetch` skips languages with existing `wiki.txt` + `.meta.json` unless `--force` or `force: true`
 - `bpe` skips languages when tokenizer artifacts exist and both corpus checksum and BPE config hash match
 - `bpe --force` always retrains and overwrites tokenizer artifacts
+- `tokenize` skips languages with existing `train.bin`, `val.bin`, and metadata unless `--force`
