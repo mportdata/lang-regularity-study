@@ -12,8 +12,6 @@ from tokenizers import Tokenizer, models, pre_tokenizers, trainers
 
 from ..config import BPEConfig, load_config
 
-LEGACY_BPE_OUTPUT_ROOT = Path("data/processed/bpe")
-
 
 def _sha256_for_file(path: Path) -> str:
     digest = hashlib.sha256()
@@ -129,14 +127,6 @@ def _should_skip(
     return metadata.get("bpe_config") == expected_bpe_config
 
 
-def _legacy_artifact_paths(output_dir: Path, experiment_name: str, language: str) -> tuple[Path, Path]:
-    current_root = output_dir.parents[1]
-    if current_root == LEGACY_BPE_OUTPUT_ROOT:
-        return output_dir / "tokenizer.json", output_dir / "bpe.meta.json"
-    legacy_output_dir = LEGACY_BPE_OUTPUT_ROOT / experiment_name / language
-    return legacy_output_dir / "tokenizer.json", legacy_output_dir / "bpe.meta.json"
-
-
 def _train_for_language(
     input_root: Path, language: str, bpe_cfg: BPEConfig, force: bool
 ) -> None:
@@ -165,25 +155,6 @@ def _train_for_language(
         force=force,
     ):
         typer.echo(f"BPE already up to date for '{language}'. Skipping (use --force to retrain).")
-        return
-
-    legacy_tokenizer_path, legacy_metadata_path = _legacy_artifact_paths(
-        output_dir=output_dir,
-        experiment_name=bpe_cfg.experiment_name,
-        language=language,
-    )
-    if _should_skip(
-        metadata_path=legacy_metadata_path,
-        tokenizer_json_path=legacy_tokenizer_path,
-        expected_config_hash=config_hash,
-        expected_bpe_config=bpe_config_snapshot,
-        input_sha256=input_sha256,
-        force=force,
-    ):
-        typer.echo(
-            "BPE already up to date in legacy path for "
-            f"'{language}' ({legacy_tokenizer_path}). Skipping."
-        )
         return
 
     typer.echo(f"Training BPE for language '{language}'...")

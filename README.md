@@ -90,4 +90,3 @@ Skip/overwrite behavior:
 - `fetch` skips languages with existing `wiki.txt` + `.meta.json` unless `--force` or `force: true`
 - `bpe` skips languages when tokenizer artifacts exist and both corpus checksum and BPE config hash match
 - `bpe --force` always retrains and overwrites tokenizer artifacts
-- Legacy compatibility: existing artifacts under `data/processed/bpe/...` are detected and reused
