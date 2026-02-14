@@ -1,0 +1,57 @@
+languages:
+  - en
+hf_dataset: "wikimedia/wikipedia"
+hf_date: "20231101"
+hf_split: "train"
+hf_text_field: "text"
+output_dir: "data/raw"
+work_dir: "data/.work"
+max_size_mb: 5
+force: false
+
+bpe:
+  experiment_name: "small_debug_bpe_v1"
+  output_root: "data/tokenizers"
+  vocab_size: 4096
+  min_frequency: 2
+  limit_alphabet: 1000
+  train_sample_mb: 2
+  shuffle_seed: 42
+  special_tokens:
+    - "<pad>"
+    - "<unk>"
+    - "<bos>"
+    - "<eos>"
+  unk_token: "<unk>"
+
+tokenize:
+  experiment_name: "small_debug_enc_v1"
+  output_root: "data/encoded"
+  val_ratio: 0.1
+  seed: 42
+  add_bos: true
+  add_eos: true
+  dtype: "auto"
+  max_tokens: 300000
+
+train:
+  experiment_name: "small_debug_gpt_v1"
+  output_root: "runs"
+  device: "auto"
+  block_size: 64
+  batch_size: 8
+  max_steps: 60
+  eval_interval: 20
+  eval_batches: 5
+  learning_rate: 0.0005
+  weight_decay: 0.1
+  grad_clip: 1.0
+  n_embd: 128
+  n_head: 4
+  n_layer: 4
+  dropout: 0.1
+  seed: 42
+
+eval:
+  output_subdir: "eval"
+
