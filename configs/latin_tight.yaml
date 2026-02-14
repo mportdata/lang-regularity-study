@@ -12,3 +12,18 @@ output_dir: "data/raw"
 work_dir: "data/.work"
 max_size_mb: 50
 force: false
+
+bpe:
+  experiment_name: "latin_tight_bpe_v1"
+  output_root: "data/processed/bpe"
+  vocab_size: 16000
+  min_frequency: 2
+  limit_alphabet: 1000
+  train_sample_mb: 10
+  shuffle_seed: 42
+  special_tokens:
+    - "<pad>"
+    - "<unk>"
+    - "<bos>"
+    - "<eos>"
+  unk_token: "<unk>"
