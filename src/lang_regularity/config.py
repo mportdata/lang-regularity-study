@@ -18,6 +18,18 @@ class BPEConfig:
 
 
 @dataclass(frozen=True)
+class TokenizeConfig:
+    experiment_name: str
+    output_root: Path
+    val_ratio: float
+    seed: int
+    add_bos: bool
+    add_eos: bool
+    dtype: str
+    max_tokens: int | None = None
+
+
+@dataclass(frozen=True)
 class ExperimentConfig:
     languages: list[str]
     hf_dataset: str
@@ -29,6 +41,7 @@ class ExperimentConfig:
     max_size_mb: float | None = None
     force: bool = False
     bpe: BPEConfig | None = None
+    tokenize: TokenizeConfig | None = None
 
 
 def _require_mapping(data: object, config_path: Path) -> dict:
@@ -116,6 +129,58 @@ def _load_bpe_config(data: dict, config_path: Path) -> BPEConfig | None:
     )
 
 
+def _load_tokenize_config(data: dict, config_path: Path) -> TokenizeConfig | None:
+    tokenize_raw = data.get("tokenize")
+    if tokenize_raw is None:
+        return None
+    if not isinstance(tokenize_raw, dict):
+        raise ValueError(f"Config key 'tokenize' in '{config_path}' must be a mapping.")
+
+    experiment_name = _require_str(tokenize_raw, "experiment_name", config_path)
+    output_root = Path(_require_str(tokenize_raw, "output_root", config_path))
+    seed = _require_int(tokenize_raw, "seed", config_path)
+
+    val_ratio_raw = tokenize_raw.get("val_ratio")
+    if not isinstance(val_ratio_raw, (int, float)) or not (0 < float(val_ratio_raw) < 1):
+        raise ValueError(
+            f"Config key 'tokenize.val_ratio' in '{config_path}' must be between 0 and 1."
+        )
+    val_ratio = float(val_ratio_raw)
+
+    add_bos = tokenize_raw.get("add_bos", False)
+    add_eos = tokenize_raw.get("add_eos", True)
+    if not isinstance(add_bos, bool):
+        raise ValueError(f"Config key 'tokenize.add_bos' in '{config_path}' must be a boolean.")
+    if not isinstance(add_eos, bool):
+        raise ValueError(f"Config key 'tokenize.add_eos' in '{config_path}' must be a boolean.")
+
+    dtype = _require_str(tokenize_raw, "dtype", config_path).lower()
+    if dtype not in {"auto", "uint16", "uint32"}:
+        raise ValueError(
+            f"Config key 'tokenize.dtype' in '{config_path}' must be one of auto|uint16|uint32."
+        )
+
+    max_tokens_raw = tokenize_raw.get("max_tokens")
+    max_tokens: int | None = None
+    if max_tokens_raw is not None:
+        if not isinstance(max_tokens_raw, int) or max_tokens_raw <= 0:
+            raise ValueError(
+                f"Config key 'tokenize.max_tokens' in '{config_path}' must be a positive integer."
+            )
+        max_tokens = max_tokens_raw
+
+    return TokenizeConfig(
+        experiment_name=experiment_name,
+        output_root=output_root,
+        val_ratio=val_ratio,
+        seed=seed,
+        add_bos=add_bos,
+        add_eos=add_eos,
+        dtype=dtype,
+        max_tokens=max_tokens,
+    )
+
+
 def load_config(config_path: Path) -> ExperimentConfig:
     if not config_path.exists():
         raise FileNotFoundError(f"Config file not found: {config_path}")
@@ -145,6 +210,7 @@ def load_config(config_path: Path) -> ExperimentConfig:
         raise ValueError(f"Config key 'force' in '{config_path}' must be a boolean.")
 
     bpe = _load_bpe_config(data, config_path)
+    tokenize = _load_tokenize_config(data, config_path)
 
     return ExperimentConfig(
         languages=languages,
@@ -157,4 +223,5 @@ def load_config(config_path: Path) -> ExperimentConfig:
         max_size_mb=max_size_mb,
         force=force,
         bpe=bpe,
+        tokenize=tokenize,
     )
