@@ -10,6 +10,7 @@ import typer
 from datasets import load_dataset
 
 from ..config import load_config
+from .paths import corpus_paths
 
 
 def _sha256_for_file(path: Path) -> str:
@@ -86,16 +87,39 @@ def _fetch_language(cfg, lang: str, force: bool) -> None:
 
     raw_lang_dir = cfg.output_dir / lang
     work_lang_dir = cfg.work_dir / lang
-    output_text_path = raw_lang_dir / "wiki.txt"
-    metadata_path = raw_lang_dir / "wiki.txt.meta.json"
+    output_text_path, metadata_path = corpus_paths(raw_lang_dir, cfg.max_size_mb)
 
     raw_lang_dir.mkdir(parents=True, exist_ok=True)
     work_lang_dir.mkdir(parents=True, exist_ok=True)
     if output_text_path.exists() and metadata_path.exists() and not effective_force:
+        try:
+            metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            metadata = {}
+
+        expected = {
+            "hf_dataset": cfg.hf_dataset,
+            "hf_date": cfg.hf_date,
+            "hf_split": cfg.hf_split,
+            "hf_text_field": cfg.hf_text_field,
+            "max_size_mb": cfg.max_size_mb,
+        }
+        mismatches: list[str] = []
+        for key, expected_value in expected.items():
+            if metadata.get(key) != expected_value:
+                mismatches.append(
+                    f"{key}={metadata.get(key)!r} -> {expected_value!r}"
+                )
+
+        if not mismatches:
+            typer.echo(
+                f"Output already exists at '{output_text_path}'. Skipping (use --force to rebuild)."
+            )
+            return
+
         typer.echo(
-            f"Output already exists at '{output_text_path}'. Skipping (use --force to rebuild)."
+            f"Fetch config changed for '{lang}' ({'; '.join(mismatches)}). Rebuilding."
         )
-        return
 
     typer.echo(
         "Streaming from Hugging Face dataset "

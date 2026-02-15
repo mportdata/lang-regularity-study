@@ -1,0 +1,25 @@
+study_name: "latin_regularities_matrix_v1"
+languages:
+  - en
+  - eo
+  - fi
+  - fr
+  - tr
+
+rows:
+  - id: "latin_tight"
+    config: "configs/latin_tight.yaml"
+    data_budget_mb: 50
+    bpe_vocab_size: 16000
+    model_scale: "small"
+  - id: "latin_large"
+    config: "configs/latin_large.yaml"
+    data_budget_mb: 500
+    bpe_vocab_size: 24000
+    model_scale: "large"
+  - id: "latin_xlarge"
+    config: "configs/latin_xlarge.yaml"
+    data_budget_mb: 1000
+    bpe_vocab_size: 32000
+    model_scale: "xlarge"
+
