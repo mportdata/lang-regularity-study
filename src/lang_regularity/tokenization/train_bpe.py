@@ -8,9 +8,10 @@ from pathlib import Path
 from typing import Iterable
 
 import typer
-from tokenizers import Tokenizer, models, pre_tokenizers, trainers
+from tokenizers import Tokenizer, decoders, models, pre_tokenizers, trainers
 
 from ..config import BPEConfig, load_config
+from ..data.paths import resolve_input_corpus_path
 
 
 def _sha256_for_file(path: Path) -> str:
@@ -92,6 +93,7 @@ def _collect_training_texts(corpus_path: Path, sample_mb: float, seed: int) -> l
 def _train_tokenizer(texts: Iterable[str], bpe_cfg: BPEConfig) -> Tokenizer:
     tokenizer = Tokenizer(models.BPE(unk_token=bpe_cfg.unk_token))
     tokenizer.pre_tokenizer = pre_tokenizers.ByteLevel(add_prefix_space=False)
+    tokenizer.decoder = decoders.ByteLevel()
     trainer = trainers.BpeTrainer(
         vocab_size=bpe_cfg.vocab_size,
         min_frequency=bpe_cfg.min_frequency,
@@ -128,13 +130,9 @@ def _should_skip(
 
 
 def _train_for_language(
-    input_root: Path, language: str, bpe_cfg: BPEConfig, force: bool
+    input_root: Path, language: str, bpe_cfg: BPEConfig, max_size_mb: float | None, force: bool
 ) -> None:
-    input_corpus_path = input_root / language / "wiki.txt"
-    if not input_corpus_path.exists():
-        raise FileNotFoundError(
-            f"Missing corpus for language '{language}': {input_corpus_path}. Run fetch first."
-        )
+    input_corpus_path = resolve_input_corpus_path(input_root / language, max_size_mb)
 
     output_dir = bpe_cfg.output_root / bpe_cfg.experiment_name / language
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -199,6 +197,6 @@ def run_bpe(config_path: Path, force: bool = False) -> None:
             input_root=cfg.output_dir,
             language=language,
             bpe_cfg=cfg.bpe,
+            max_size_mb=cfg.max_size_mb,
             force=effective_force,
         )
-

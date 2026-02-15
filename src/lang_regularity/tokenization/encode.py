@@ -10,6 +10,7 @@ import typer
 from tokenizers import Tokenizer
 
 from ..config import TokenizeConfig, load_config
+from ..data.paths import resolve_input_corpus_path
 
 
 def _iter_documents(corpus_path: Path):
@@ -173,7 +174,7 @@ def run_tokenize(config_path: Path, force: bool = False) -> None:
 
     effective_force = force or cfg.force
     for language in cfg.languages:
-        corpus_path = cfg.output_dir / language / "wiki.txt"
+        corpus_path = resolve_input_corpus_path(cfg.output_dir / language, cfg.max_size_mb)
         tokenizer_path = cfg.bpe.output_root / cfg.bpe.experiment_name / language / "tokenizer.json"
         output_dir = cfg.tokenize.output_root / cfg.tokenize.experiment_name / language
         _tokenize_language(
@@ -184,4 +185,3 @@ def run_tokenize(config_path: Path, force: bool = False) -> None:
             tokenize_cfg=cfg.tokenize,
             force=effective_force,
         )
-

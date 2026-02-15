@@ -84,10 +84,56 @@ make eval
 python -m lang_regularity eval --config configs/latin_tight.yaml
 ```
 
+### List locally trained models
+
+```bash
+make models
+# or
+uv run python -m lang_regularity models --runs-root runs
+```
+
+### Generate text from a trained model
+
+```bash
+# Select by experiment + language
+uv run python -m lang_regularity generate \
+  --experiment small_debug_gpt_v1 \
+  --language en \
+  --prompt "Language evolves when" \
+  --max-new-tokens 80
+
+# Or select explicitly by run directory for exact version pinning
+uv run python -m lang_regularity generate \
+  --run-dir runs/small_debug_gpt_v1/en \
+  --tokenizer data/tokenizers/small_debug_bpe_v1/en/tokenizer.json \
+  --prompt "Language evolves when" \
+  --max-new-tokens 80
+```
+
+### Validate model artifacts before generation
+
+```bash
+# Validate every discovered model
+make validate-model
+
+# Validate one selected model
+uv run python -m lang_regularity validate-model \
+  --experiment small_debug_gpt_v1 \
+  --language en
+```
+
+### Build an analysis-ready results table
+
+```bash
+make results-table
+# writes analysis/results_table.csv
+```
+
 ### Run full data pipeline (through tokenize)
 
 ```bash
 make pipeline
+# prompts to select config when run interactively
 # force all stages
 make pipeline FORCE=1
 # or
@@ -106,8 +152,8 @@ python -m lang_regularity experiment --config configs/latin_tight.yaml --force
 
 ## Output
 
-- **Raw data**: `data/raw/<lang>/wiki.txt` - Extracted text corpus
-- **Metadata**: `data/raw/<lang>/wiki.txt.meta.json` - Source info, checksums, sizes, timestamps
+- **Raw data**: `data/raw/<lang>/wiki_<size>mb.txt` (or `wiki_full.txt`) - Extracted text corpus
+- **Metadata**: `data/raw/<lang>/wiki_<size>mb.txt.meta.json` - Source info, checksums, sizes, timestamps
 - **Work directory**: `data/.work/<lang>/` - Reserved for run artifacts
 - **BPE artifacts**: `data/tokenizers/<experiment>/<lang>/` - `tokenizer.json`, vocab/merges, metadata
 - **Encoded tokens**: `data/encoded/<experiment>/<lang>/` - `train.bin`, `val.bin`, tokenization metadata
@@ -171,7 +217,7 @@ Edit the experiment config file in `configs/` to customize:
 - `output_subdir`: Subdirectory under `runs/<train_experiment>/`
 
 Skip/overwrite behavior:
-- `fetch` skips languages with existing `wiki.txt` + `.meta.json` unless `--force` or `force: true`
+- `fetch` skips languages with existing size-specific corpus + metadata unless `--force` or `force: true`
 - `bpe` skips languages when tokenizer artifacts exist and both corpus checksum and BPE config hash match
 - `bpe --force` always retrains and overwrites tokenizer artifacts
 - `tokenize` skips languages with existing `train.bin`, `val.bin`, and metadata unless `--force`

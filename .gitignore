@@ -13,3 +13,6 @@ build/
 /data/
 /runs/
 /.work/
+/analysis/
+.ruff_cache/
+.vscode/

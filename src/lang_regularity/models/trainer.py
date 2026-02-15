@@ -59,6 +59,11 @@ def _run_language_training(cfg: ExperimentConfig, language: str, force: bool) ->
     tokenize_meta = json.loads(meta_path.read_text(encoding="utf-8"))
     dtype_name = str(tokenize_meta["dtype"])
     vocab_size = int(tokenize_meta["vocab_size"])
+    tokenizer_path = (
+        cfg.bpe.output_root / cfg.bpe.experiment_name / language / "tokenizer.json"
+        if cfg.bpe is not None
+        else None
+    )
 
     device_info = resolve_torch_device(cfg.train.device)
     if device_info.fallback_reason:
@@ -144,6 +149,7 @@ def _run_language_training(cfg: ExperimentConfig, language: str, force: bool) ->
             "dropout": cfg.train.dropout,
             "language": language,
             "tokenize_experiment": cfg.tokenize.experiment_name,
+            "tokenizer_path": str(tokenizer_path) if tokenizer_path is not None else None,
         },
         model_path,
     )
@@ -156,6 +162,7 @@ def _run_language_training(cfg: ExperimentConfig, language: str, force: bool) ->
         "device_used": device_info.selected,
         "train_bin_path": str(train_bin),
         "val_bin_path": str(val_bin),
+        "tokenizer_path": str(tokenizer_path) if tokenizer_path is not None else None,
         "model_path": str(model_path),
         "train_log_path": str(train_log_path),
         "max_steps": cfg.train.max_steps,
