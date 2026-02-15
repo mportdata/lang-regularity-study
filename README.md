@@ -35,7 +35,7 @@ This allows one config to run on both Apple Silicon and NVIDIA machines.
 ```bash
 make fetch
 # or
-python -m lang_regularity fetch --config configs/latin_tight.yaml
+uv run python -m lang_regularity fetch --config configs/latin_tight.yaml
 ```
 
 ### Convenience alias
@@ -43,13 +43,13 @@ python -m lang_regularity fetch --config configs/latin_tight.yaml
 ```bash
 make fetch-all
 # or
-python -m lang_regularity fetch-all --config configs/latin_tight.yaml
+uv run python -m lang_regularity fetch-all --config configs/latin_tight.yaml
 ```
 
 ### Force re-download
 
 ```bash
-python -m lang_regularity fetch --config configs/latin_tight.yaml --force
+uv run python -m lang_regularity fetch --config configs/latin_tight.yaml --force
 ```
 
 ### Train BPE tokenizers
@@ -57,7 +57,7 @@ python -m lang_regularity fetch --config configs/latin_tight.yaml --force
 ```bash
 make bpe
 # or
-python -m lang_regularity bpe --config configs/latin_tight.yaml
+uv run python -m lang_regularity bpe --config configs/latin_tight.yaml
 ```
 
 ### Tokenize corpora for model training
@@ -65,7 +65,7 @@ python -m lang_regularity bpe --config configs/latin_tight.yaml
 ```bash
 make tokenize
 # or
-python -m lang_regularity tokenize --config configs/latin_tight.yaml
+uv run python -m lang_regularity tokenize --config configs/latin_tight.yaml
 ```
 
 ### Train small language models
@@ -73,7 +73,7 @@ python -m lang_regularity tokenize --config configs/latin_tight.yaml
 ```bash
 make train
 # or
-python -m lang_regularity train --config configs/latin_tight.yaml
+uv run python -m lang_regularity train --config configs/latin_tight.yaml
 ```
 
 ### Evaluate and compare languages
@@ -81,7 +81,7 @@ python -m lang_regularity train --config configs/latin_tight.yaml
 ```bash
 make eval
 # or
-python -m lang_regularity eval --config configs/latin_tight.yaml
+uv run python -m lang_regularity eval --config configs/latin_tight.yaml
 ```
 
 ### List locally trained models
@@ -134,20 +134,25 @@ make results-table
 ```bash
 make pipeline
 # prompts to select config when run interactively
+# explicit config
+make pipeline CONFIG=configs/latin_large.yaml
 # force all stages
 make pipeline FORCE=1
 # or
-python -m lang_regularity pipeline --config configs/latin_tight.yaml --force
+uv run python -m lang_regularity pipeline --config configs/latin_tight.yaml --force
 ```
 
 ### Run full experiment pipeline
 
 ```bash
 make experiment
+# prompts to select config when run interactively
+# explicit config
+make experiment CONFIG=configs/latin_xlarge.yaml
 # force all stages
 make experiment FORCE=1
 # or
-python -m lang_regularity experiment --config configs/latin_tight.yaml --force
+uv run python -m lang_regularity experiment --config configs/latin_tight.yaml --force
 ```
 
 ## Output
@@ -224,11 +229,11 @@ Skip/overwrite behavior:
 - `train` skips languages with existing `model.pt` + `metrics.json` unless `--force`
 - `eval` skips existing summary output unless `--force`
 
-## Planned PR Sequence
+## Suggested Configs
 
-- `PR2` complete: tokenize stage (`data/encoded/...`)
-- `PR3`: train stage with cross-architecture device fallback (`cuda`/`mps`/`cpu`)
-- `PR4`: evaluation summary/comparison stage (`runs/<exp>/eval/summary.json`)
-- `PR5`: full experiment command (`fetch -> bpe -> tokenize -> train -> eval`)
+- `configs/latin_tight.yaml`: smaller/fast baseline
+- `configs/latin_large.yaml`: larger budget and stronger model settings
+- `configs/latin_xlarge.yaml`: highest current budget/settings
+- `configs/experiment_matrix_latin.yaml`: matrix definition for comparative study rows
 
-Detailed plan: `docs/pr_plan.md`.
+Study design notes: `docs/regularity_study_plan.md`.
